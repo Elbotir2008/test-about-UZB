@@ -1,64 +1,112 @@
-const questions = [
-    {
-        question: 'Укажите город, который был объявлен столицей государства Амира Темура.',
-        options: ['A) Самарканд', 'B) Бухара', 'C) Кеш', 'D) Шаш'],
-        correctAnswer: 'A'
-    },
-    {
-        question: 'Определите поселение на территории Узбекистана, в планировке которого прослеживаются первые признаки города.',
-        options: ['A) Джаркутан', 'B) Обишир', 'C) Селенгур', 'D) Кульбулак'],
-        correctAnswer: 'A'
-    }
-    // Qolgan savollarni ham qo'shing
-];
+import { quizData } from './quizData.js';
 
-let currentQuestionIndex = 0;
+let currentQuestion = 0;
 let score = 0;
+let selectedLang = 'ru'; // Default language
 
-const questionContainer = document.getElementById('question-container');
-const nextButton = document.getElementById('next-button');
-const resultsContainer = document.getElementById('results');
+const questionContainer = document.getElementById("question-container");
+const nextButton = document.getElementById("next-button");
+const resultsContainer = document.getElementById("results");
+const restartButton = document.getElementById("restart-button");
+const languageButtons = document.querySelectorAll(".language-btn");
 
-function showQuestion() {
-    questionContainer.innerHTML = '';
-    const currentQuestion = questions[currentQuestionIndex];
-    const questionElement = document.createElement('p');
-    questionElement.textContent = currentQuestion.question;
-    questionContainer.appendChild(questionElement);
+const textContent = {
+  ru: {
+    nextButton: "Следующий вопрос",
+    restartButton: "Начать заново",
+    results: "Вы ответили правильно на",
+    resultsEnd: "вопросов.",
+  },
+  en: {
+    nextButton: "Next Question",
+    restartButton: "Restart Quiz",
+    results: "You answered correctly",
+    resultsEnd: "questions.",
+  },
+  uz: {
+    nextButton: "Keyingi savol",
+    restartButton: "Qayta boshlash",
+    results: "Siz to'g'ri javob berdingiz",
+    resultsEnd: "savolga.",
+  }
+};
 
-    currentQuestion.options.forEach(option => {
-        const label = document.createElement('label');
-        label.innerHTML = `<input type="radio" name="answer" value="${option.charAt(0)}"> ${option}`;
-        questionContainer.appendChild(label);
-    });
+function loadQuestion() {
+  clearState();
+
+  const currentQuizData = quizData[selectedLang][currentQuestion];
+  const questionElement = document.createElement("h2");
+  questionElement.innerText = currentQuizData.question;
+  questionContainer.appendChild(questionElement);
+
+  const answers = ["a", "b", "c", "d"];
+  answers.forEach((answer) => {
+    const button = document.createElement("button");
+    button.innerText = `${answer.toUpperCase()}. ${currentQuizData[answer]}`;
+    button.classList.add("btn");
+    button.addEventListener("click", () => selectAnswer(answer));
+    questionContainer.appendChild(button);
+  });
+
+  updateUI();
 }
 
-function showNextQuestion() {
-    const selectedOption = document.querySelector('input[name="answer"]:checked');
-    if (!selectedOption) {
-        alert('Пожалуйста, выберите ответ.');
-        return;
-    }
+function clearState() {
+  while (questionContainer.firstChild) {
+    questionContainer.removeChild(questionContainer.firstChild);
+  }
+  nextButton.style.display = "none";
+  resultsContainer.style.display = "none";
+  restartButton.style.display = "none";
+}
 
-    const answer = selectedOption.value;
-    if (answer === questions[currentQuestionIndex].correctAnswer) {
-        score++;
-    }
+function selectAnswer(answer) {
+  if (answer === quizData[selectedLang][currentQuestion].correct) {
+    score++;
+  }
 
-    currentQuestionIndex++;
-    if (currentQuestionIndex < questions.length) {
-        showQuestion();
-    } else {
-        showResults();
-    }
+  currentQuestion++;
+  if (currentQuestion < quizData[selectedLang].length) {
+    loadQuestion();
+  } else {
+    showResults();
+  }
 }
 
 function showResults() {
-    questionContainer.innerHTML = '';
-    nextButton.style.display = 'none';
-    resultsContainer.textContent = `Вы ответили правильно на ${score} из ${questions.length} вопросов. Неправильных ответов: ${questions.length - score}.`;
+  clearState();
+  resultsContainer.style.display = "block";
+  resultsContainer.innerText = `${textContent[selectedLang].results} ${score} ${textContent[selectedLang].resultsEnd} ${quizData[selectedLang].length}.`;
+  restartButton.style.display = "block";
 }
 
-nextButton.addEventListener('click', showNextQuestion);
+function restartQuiz() {
+  currentQuestion = 0;
+  score = 0;
+  restartButton.style.display = "none";
+  loadQuestion();
+}
 
-showQuestion();
+function changeLanguage(event) {
+  selectedLang = event.target.getAttribute("data-lang");
+  currentQuestion = 0;
+  score = 0;
+  loadQuestion();
+}
+
+function updateUI() {
+  nextButton.innerText = textContent[selectedLang].nextButton;
+  restartButton.innerText = textContent[selectedLang].restartButton;
+}
+
+nextButton.addEventListener("click", () => {
+  loadQuestion();
+});
+
+restartButton.addEventListener("click", restartQuiz);
+
+languageButtons.forEach(button => {
+  button.addEventListener("click", changeLanguage);
+});
+
+loadQuestion();
